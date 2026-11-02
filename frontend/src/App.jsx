@@ -429,7 +429,7 @@ function MovieCard({ movie, index = 0 }) {
       style={{ animationDelay: `${Math.min(index * 45, 420)}ms` }}
       aria-label={`View details for ${movie.title}`}
     >
-      <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-card transition-all duration-300 group-hover:-translate-y-1.5 group-hover:scale-[1.03] group-hover:shadow-glow group-hover:border-accent-violet/40">
+      <div className="movie-card relative rounded-2xl overflow-hidden border border-white/10 shadow-card transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.035] group-hover:shadow-glow group-hover:border-accent-violet/40">
         <Poster movie={movie} className="aspect-[2/3]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-300" />
         <div className="absolute inset-x-0 bottom-0 p-3 translate-y-5 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 transition-all duration-300">
@@ -469,7 +469,7 @@ function Navbar() {
   const { count } = useRatings();
   return (
     <header className="sticky top-0 z-50">
-      <nav className="glass border-x-0 border-t-0" aria-label="Main navigation">
+      <nav className="glass nav-shell border-x-0 border-t-0" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5" aria-label="Reelwise home">
             <IconClapper className="w-7 h-7" />
@@ -552,10 +552,10 @@ function Home() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       {/* Hero */}
-      <section className="relative pt-14 sm:pt-20 pb-10">
+      <section className="relative hero-section pt-14 sm:pt-20 pb-10">
         <div aria-hidden="true" className="absolute -top-10 left-1/4 w-80 h-80 rounded-full bg-accent-violet/25 blur-3xl animate-float-slow" />
         <div aria-hidden="true" className="absolute top-10 right-1/4 w-72 h-72 rounded-full bg-accent-magenta/20 blur-3xl animate-float-slow" style={{ animationDelay: '-4s' }} />
-        <div className="relative text-center max-w-3xl mx-auto">
+        <div className="relative hero-panel text-center max-w-3xl mx-auto">
           <p className="text-xs font-semibold tracking-[0.25em] uppercase text-accent-amber">
             Content-based recommendations
           </p>
@@ -623,7 +623,7 @@ function Home() {
 
       {/* Genre chips */}
       <section aria-label="Filter by genre" className="pb-6">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+        <div className="genre-rail glass rounded-2xl p-2 flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-2 sm:flex-wrap">
           <button
             type="button"
             onClick={() => setGenre('')}
