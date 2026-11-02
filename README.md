@@ -4,7 +4,7 @@ A full-stack web application that recommends movies using **content-based filter
 
 **Tech (plain-text badges):** `React 18` `Vite 5` `Tailwind CSS 3` `react-router-dom 6` `Axios` · `Python 3.10+` `Flask 3` `flask-cors` `pandas 2` `numpy 1.26` `scikit-learn 1.5` `pytest`
 
-> **Dataset note:** `backend/data/movies.csv` is a small (50 movie), hand-curated illustrative dataset with original one-to-two-sentence overviews — not a licensed catalog. It is intentionally sized for a classroom project; see §12 to swap in a larger dataset.
+> **Dataset note:** `backend/data/movies.csv` contains 1,050 real movie records: 50 hand-curated records with original overviews plus 1,000 popular MovieLens records. MovieLens imports provide verified titles and genres; overview, cast, and director are intentionally blank when the source does not provide them.
 
 ---
 
@@ -12,7 +12,7 @@ A full-stack web application that recommends movies using **content-based filter
 
 What is actually implemented and tested:
 
-- **Browse** the full 50-movie catalog from the Flask API, rendered as procedurally generated CSS/SVG poster art (deterministic per title + genre, no external images).
+- **Browse** the full 1,050-movie catalog from the Flask API, rendered as procedurally generated CSS/SVG poster art (deterministic per title + genre, no external images).
 - **Live search** (300 ms debounce) via `GET /api/movies?q=…` over title, genres, overview, cast, and director.
 - **Genre filter chips** (13 genres) that combine with the active search query via `?genre=`.
 - **Movie details page** with genres, overview, cast, director, a blurred poster-colored backdrop, and a **"Because you viewed this"** recommendation carousel (top 6) with **Match % badges** — a TF-IDF cosine text-similarity score, explicitly documented *not* to be a probability or predicted rating. Clicking a recommendation navigates to that movie and refreshes its recommendations.
@@ -28,7 +28,7 @@ What is actually implemented and tested:
 
 - [x] Flask REST API (`/api/health`, `/api/movies`, `/api/movies/<id>`, `/api/recommend/<id>`, `/api/ratings`) with JSON error handlers and CORS restricted to the Vite dev origins
 - [x] `MovieRecommender` (pandas + scikit-learn TF-IDF + cosine similarity) with text-profile weighting
-- [x] 50-movie dataset (incl. RRR, 3 Idiots, Dangal, Baahubali: The Beginning, Lagaan) with original overviews
+- [x] 1,050-movie catalog: 50 curated records plus 1,000 cleaned MovieLens records
 - [x] React 18 + Vite + Tailwind frontend with all routes, ratings persistence, offline banner, skeletons, toasts
 - [x] Backend test suite (20 tests, all passing)
 - [x] Responsive, accessible, cinematic dark UI with generated poster art
@@ -40,7 +40,7 @@ What is actually implemented and tested:
 - [ ] User-specific preference vectors built from rating history
 - [ ] Hybrid / collaborative filtering (user–user, item–item) blended with content-based scores
 - [ ] Model evaluation metrics (precision@k, recall@k, MAP) with a train/holdout split
-- [ ] Larger licensed dataset (e.g. a full TMDB dump)
+- [ ] Optional metadata enrichment from a licensed/API source (for imported rows)
 - [ ] Deployment (WSGI server + static hosting + reverse proxy)
 - [ ] Frontend unit tests (Vitest + React Testing Library)
 - [ ] Docker Compose for one-command setup
@@ -91,7 +91,7 @@ What is actually implemented and tested:
    - genres: `|` → space, string repeated **twice** (genre match is weighted twice);
    - overview as-is;
    - cast & director: `|` → space, and spaces inside multi-word names removed, so "Matt Damon" becomes the single token `MattDamon` (prevents first/last names matching as separate words).
-3. **Vectorize** all 50 profiles once at startup with `TfidfVectorizer(stop_words="english", ngram_range=(1, 2), sublinear_tf=True)`. Bigrams capture adjacent-word context; sublinear TF dampens repeated terms.
+3. **Vectorize** all 1,050 profiles once at startup with `TfidfVectorizer(stop_words="english", ngram_range=(1, 2), sublinear_tf=True)`. Bigrams capture adjacent-word context; sublinear TF dampens repeated terms.
 4. **Score** `cosine_similarity(profile_i, all_profiles)`, zero out the movie itself, sort descending (ties broken by id), take top N (default 5, clamped 1–20).
 5. **Return** plain Python types (no numpy scalars) with `similarity` rounded to 2 decimals.
 
@@ -106,7 +106,7 @@ movie-recommendation-system/
 │   ├── recommender.py          # MovieRecommender: pandas + TF-IDF + cosine similarity
 │   ├── requirements.txt        # Pinned Python dependencies
 │   ├── data/
-│   │   └── movies.csv          # 50-movie dataset (id,title,genres,overview,cast,director)
+│   │   └── movies.csv          # 1,050-movie dataset (id,title,genres,overview,cast,director)
 │   └── tests/
 │       └── test_api.py         # 20 pytest tests (verification aid, uses Flask test client)
 ├── frontend/
@@ -202,7 +202,7 @@ Actual observed responses from a live run (this README was written from real out
 | Request | Status | Response (truncated) |
 |---|---|---|
 | `GET /api/health` | 200 | `{"status":"ok"}` |
-| `GET /api/movies` | 200 | list of 50 movies |
+| `GET /api/movies` | 200 | list of 1,050 movies |
 | `GET /api/movies?q=space` | 200 | `[Interstellar]` |
 | `GET /api/movies?genre=Sci-Fi` | 200 | 12 movies, all containing `Sci-Fi` |
 | `GET /api/movies/1` | 200 | Interstellar object |
@@ -250,10 +250,13 @@ Example `GET /api/recommend/1?limit=5` (real output):
 
 - `id`: unique integer starting at 1 (ids 1 and 2 are Interstellar and The Martian).
 - `genres`, `cast`: pipe-separated (`|`), comma-free.
-- `overview`: quoted if it contains commas (all 50 overviews are original).
-- All six fields populated on every row; no duplicate titles.
+- `overview`: quoted if it contains commas. Curated records include original overviews; MovieLens imports may be blank because that source provides titles and genres only.
+- `cast` and `director`: pipe-separated when available; blank for MovieLens imports.
+- All rows have the six required columns, unique IDs, and deduplicated titles.
 
-To swap in a larger dataset: keep the same six columns and pipe delimiters, replace `movies.csv`, restart the backend — nothing else changes. If your source uses comma-separated lists, convert them to `|` first.
+The catalog combines the original 50 curated records with 1,000 records selected from the MovieLens `ml-latest-small` dataset by rating-count popularity. MovieLens is provided by GroupLens for research use; see the dataset's included README and [MovieLens](https://grouplens.org/datasets/movielens/) for terms and attribution. The imported rows were cleaned, filtered to records with genres, deduplicated against the curated titles, and assigned stable IDs beginning after the curated records.
+
+To swap in another dataset: keep the same six columns and pipe delimiters, replace `movies.csv`, restart the backend — nothing else changes. If your source uses comma-separated lists, convert them to `|` first.
 
 ## 12. Configuration
 
@@ -279,7 +282,7 @@ npm run build
 
 The backend was verified end-to-end over HTTP (every endpoint, CORS, error paths) and the frontend production build compiles with zero warnings; the browser-side pass below should be repeated manually once:
 
-1. Open `http://localhost:5173` — grid loads 50 posters (skeletons first).
+1. Open `http://localhost:5173` — grid loads 1,050 posters (skeletons first).
 2. Type "space" in the search bar (waits 300 ms) — grid filters to Interstellar.
 3. Click a genre chip (e.g. Animation) — filters; combine with a search term.
 4. Open a movie — details, cast, and "Because you viewed this" row with Match % badges appear.
@@ -301,7 +304,7 @@ The backend was verified end-to-end over HTTP (every endpoint, CORS, error paths
 
 ## 15. Limitations
 
-- **Small dataset** — 50 illustrative titles; similarity scores are coarse and many scores tie.
+- **Metadata coverage** — the 1,000 MovieLens imports primarily contain title and genre metadata, so their similarity profiles are less rich than the 50 curated records.
 - **No authentication** — anyone on the machine can POST ratings.
 - **Ratings live only in the browser** (`localStorage` key `movieRatings`); clearing site data clears them. Nothing is stored server-side (`"persisted": false`).
 - **No server database** — the CSV is read once at startup; edits require a restart.
@@ -310,7 +313,7 @@ The backend was verified end-to-end over HTTP (every endpoint, CORS, error paths
 ## 16. Assumptions
 
 1. **Poster art is generated** (CSS gradients + typography derived from genre hue + title hash) instead of real poster images, to stay offline-friendly and copyright-safe.
-2. **Search is substring-based** (case-insensitive) across the five text fields, which is adequate for a 50-row catalog.
+2. **Search is substring-based** (case-insensitive) across the five text fields. Imported MovieLens rows are primarily searchable by title and genre because their source record does not include plot, cast, or director metadata.
 3. **Ratings are validated but intentionally not persisted** server-side (spec requirement); localStorage is the source of truth.
 4. **Sandbox note:** in the automated build sandbox, Python packages were installed to the system interpreter (PEP 668 / missing `ensurepip` blocks `venv` bootstrapping there); the documented `python -m venv` flow is unchanged and is the supported path on normal machines.
 5. **Recommendation ties** (equal cosine scores) are broken by ascending movie id for stable output.
