@@ -106,6 +106,15 @@ function IconInfo({ className = 'w-4 h-4' }) {
   );
 }
 
+function IconSparkles({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <path d="m12 3 1.4 5.6L19 10l-5.6 1.4L12 17l-1.4-5.6L5 10l5.6-1.4L12 3Z" />
+      <path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" />
+    </svg>
+  );
+}
+
 /* --------------------------------------------------------------- contexts */
 
 const ToastCtx = createContext(null);
@@ -306,7 +315,7 @@ function Poster({ movie, className = '', letterClass = 'text-[6.5rem]' }) {
       >
         {initial}
       </span>
-      <div className="absolute inset-x-0 top-0 p-3">
+      <div className="absolute inset-x-0 top-0 p-3 pl-24 text-right">
         <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/70">
           {(movie.genres || [])[0] || 'Film'}
         </span>
@@ -315,7 +324,9 @@ function Poster({ movie, className = '', letterClass = 'text-[6.5rem]' }) {
         <p className="font-display font-bold leading-[1.15] text-white text-[15px] line-clamp-3">
           {movie.title}
         </p>
-        <p className="text-[11px] text-white/60 mt-1 truncate">{movie.director}</p>
+        {movie.director && (
+          <p className="text-[11px] text-white/60 mt-1 truncate">{movie.director}</p>
+        )}
       </div>
     </div>
   );
@@ -410,6 +421,7 @@ function EmptyState({ title, hint, action }) {
 function MovieCard({ movie, index = 0 }) {
   const { ratings } = useRatings();
   const rated = ratings[movie.id];
+  const imported = movie.id > 50;
   return (
     <Link
       to={`/movie/${movie.id}`}
@@ -431,6 +443,9 @@ function MovieCard({ movie, index = 0 }) {
             </span>
           </p>
         </div>
+        <span className="absolute left-2 top-2 rounded-full bg-ink/70 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/75 backdrop-blur border border-white/10">
+          {imported ? 'MovieLens' : 'Curated'}
+        </span>
         {rated && (
           <div className="absolute top-2 right-2 rounded-full bg-ink/75 backdrop-blur px-2 py-1 border border-white/10">
             <SmallStars value={rated} />
@@ -553,9 +568,21 @@ function Home() {
             TF-IDF text profiles and cosine similarity match every film to the
             ones most like it — instantly.
           </p>
+          <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3 max-w-xl mx-auto">
+            {[
+              ['1,050+', 'real films'],
+              [genres.length || 13, 'genres'],
+              ['20', 'match results'],
+            ].map(([value, label]) => (
+              <div key={label} className="stat-tile rounded-2xl px-3 py-3 text-left">
+                <p className="font-display font-bold text-lg sm:text-xl text-mist">{value}</p>
+                <p className="mt-0.5 text-[10px] sm:text-xs uppercase tracking-[0.12em] text-muted">{label}</p>
+              </div>
+            ))}
+          </div>
 
           {/* Search bar */}
-          <div className="mt-8 glass rounded-2xl flex items-center gap-3 px-5 py-2 transition-all focus-within:border-accent-violet/60 focus-within:shadow-glow">
+          <div className="mt-8 glass search-shell rounded-2xl flex items-center gap-3 px-5 py-2 transition-all focus-within:border-accent-violet/60 focus-within:shadow-glow">
             <IconSearch className="w-5 h-5 text-muted shrink-0" />
             <input
               type="search"
@@ -580,13 +607,17 @@ function Home() {
           {/* Stat strip */}
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted flex-wrap">
             <span className="glass rounded-full px-3 py-1">
-              {catalog.length || 50}+ movies
+              {catalog.length || 1050}+ movies
             </span>
             <span className="text-white/20" aria-hidden="true">•</span>
             <span className="glass rounded-full px-3 py-1">TF-IDF powered</span>
             <span className="text-white/20" aria-hidden="true">•</span>
             <span className="glass rounded-full px-3 py-1">Instant matches</span>
           </div>
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted">
+            <IconSparkles className="w-3.5 h-3.5 text-accent-amber" />
+            Curated picks plus popular MovieLens titles, cleaned for discovery
+          </p>
         </div>
       </section>
 
@@ -626,9 +657,12 @@ function Home() {
       {/* Grid */}
       <section aria-label="Movie catalog" className="pb-16">
         <div className="flex items-baseline justify-between mb-4">
-          <h2 className="font-display font-bold text-xl text-mist">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-accent-amber font-semibold">Your next watch</p>
+            <h2 className="mt-1 font-display font-bold text-xl text-mist">
             {genre ? `${genre} movies` : query ? 'Search results' : 'Browse the catalog'}
-          </h2>
+            </h2>
+          </div>
           {!loading && !error && (
             <p className="text-sm text-muted">
               {movies.length} {movies.length === 1 ? 'movie' : 'movies'}
